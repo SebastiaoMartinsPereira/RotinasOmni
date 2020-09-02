@@ -1,0 +1,11 @@
+{
+  "profiles": {
+    "RotinasOmni": {
+      "commandName": "Project",
+      "commandLineArgs": "EnvioOcorrencias -a",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      }
+    }
+  }
+}
