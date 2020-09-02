@@ -14,6 +14,10 @@ namespace RotinasOmni
         private readonly Spinner _spinner;
         private readonly string[] _args;
 
+
+
+
+
         public App(string[] args, IConfiguration configuration, ILogger<App> logger, Spinner spinner)
         {
             this.Configuration = configuration;
