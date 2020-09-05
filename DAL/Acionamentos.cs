@@ -8,6 +8,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace EnvioOcorrenciasOmni.DAL
 {
@@ -28,7 +29,39 @@ namespace EnvioOcorrenciasOmni.DAL
         /// <param name="dataInicio"></param>
         /// <param name="dataFinal"></param>
         /// <returns></returns>
-        public IEnumerable<AcionamentoIntegracaoOmni> OcorrenciasParaEnvioWs(DateTime dataInicio, DateTime dataFinal)
+        public IEnumerable<AcionamentoIntegracaoOmni> SimulacaoesOcorrenciasParaEnvioWs(int numeroLinhas, int principioContagem)
+        {
+            try
+            {
+                return _conn.GetConn().
+                    Query<AcionamentoIntegracaoOmni>("select * from public.fn_gerar_simulacao_ocorrencias(_limit:=@_limit, _offset:=@_offset)"
+                    , new
+                    {
+                        _limit = numeroLinhas,
+                        _offset = principioContagem
+                    });
+            }
+            catch (Exception ex)
+            {
+
+                var um = ex;
+            }
+            finally
+            {
+                _conn.CloseConn();
+            }
+
+            return null;
+
+        }
+
+        /// <summary>
+        /// Recupera os acionamentos a serem enviados via WS
+        /// </summary>
+        /// <param name="dataInicio"></param>
+        /// <param name="dataFinal"></param>
+        /// <returns></returns>
+        public IEnumerable<AcionamentoIntegracaoOmni> OcorrenciasParaEnvioWs(DateTime _andn_dt_inicio, DateTime _andn_dt_fim)
         {
             try
             {
@@ -36,8 +69,8 @@ namespace EnvioOcorrenciasOmni.DAL
                     Query<AcionamentoIntegracaoOmni>("select * from public.fn_integracao_omni_incluir_andamento(_andn_dt_inicio:=@_andn_dt_inicio::timestamp,_andn_dt_fim:=@_andn_dt_fim,_cliente:=@_cliente)"
                     , new
                     {
-                        _andn_dt_inicio = dataInicio,
-                        _andn_dt_fim = dataFinal,
+                        _andn_dt_inicio = _andn_dt_inicio,
+                        _andn_dt_fim = _andn_dt_fim,
                         _cliente = 10
                     });
             }
@@ -45,8 +78,8 @@ namespace EnvioOcorrenciasOmni.DAL
             {
                 _conn.CloseConn();
             }
-
         }
+
 
         public void RegistrarHistoricoOcorrencia(IEnumerable<Ocorrencia> ocorrencias)
         {

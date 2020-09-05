@@ -2,7 +2,7 @@
   "profiles": {
     "RotinasOmni": {
       "commandName": "Project",
-      "commandLineArgs": "EnvioOcorrencias -a",
+      "commandLineArgs": "SimularOcorrencias",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development"
       }
