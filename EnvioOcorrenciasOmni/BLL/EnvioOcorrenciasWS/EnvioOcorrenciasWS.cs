@@ -11,6 +11,7 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Text;
 using System.Threading;
+using System.Threading.Tasks;
 using WsCobrancaOmni;
 
 namespace EnvioOcorrenciasOmni.BLL.EnvioOcorrenciasWS
@@ -158,6 +159,82 @@ namespace EnvioOcorrenciasOmni.BLL.EnvioOcorrenciasWS
             }
         }
 
+        public void SimularOcorrencia(int us_id)
+        {
+            var nomeArquivo = "";
+            List<Ocorrencia> Ocorrencias = new List<Ocorrencia>();
+
+            try
+            {
+                _spinner.SetCursorSpinner(_logger, "Recuperando ocorrencias a serem enviadas");
+
+                int limit = 20000;
+                int offset = 0;
+
+                //Recupera dados das ocorrências a serem importadas para a omni.
+                using (var dalAndamentoNegocial = new DAL.Acionamentos(_config))
+                {
+                    IEnumerable<AcionamentoIntegracaoOmni> ocorrencias;
+                    while ((ocorrencias = dalAndamentoNegocial.SimulacaoesOcorrenciasParaEnvioWs(limit, offset)).Count() > 0)
+                    {
+                        _spinner.SetCursorSpinner(_logger, $"Enviando simulações de {offset} à {offset + limit}");
+
+                        IEnumerable<AcionamentoIntegracaoOmni> dados = ocorrencias;
+                        dados.AsParallel()
+                            .ForAll(ocorr =>
+                            {
+
+                                try
+                                {
+                                    var ret = _clienteServicoOmni.IncluirOcorrencia(
+                                                                          ocorr.contr_contrato
+                                                                        , ocorr.at_reu_cod_externo
+                                                                        , ocorr.us_login_externo
+                                                                        , ocorr.cod_ocorr_omni
+                                                                        , ocorr.andn_data_cadastro
+                                                                        , ocorr.andn_andamento
+                                                                        , ocorr.telefone
+                                                                        , ocorr.cod_cliente_omni
+                                                                    );
+
+                                    Ocorrencia ocorrencia = GerarOcorrencia(us_id, ocorr, MontarMensagem(ocorr.andn_id, ret), (ret.erro?.Length ?? 0) == 0);
+                                    Ocorrencias.Add(ocorrencia);
+                                }
+                                catch (Exception ex)
+                                {
+                                    _logger.LogDebug(" Ocorreu um erro: " + string.Format("IdOcorrencia: {0} | Erro: {1}", ocorr.andn_id, ex.Message));
+                                }
+                            }
+                        );
+
+
+                        offset += limit;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogDebug($" Ocorreu um erro: {ex.Message}");
+                throw;
+            }
+            finally
+            {
+                if (Ocorrencias.Count > 0)
+                {
+                    GeradorArquivo.ListaParaCsv(Ocorrencias, nomeArquivo = $"{saveFilePath}\\Simulacoes_{DateTime.Now:yyyyMMddHHmmss}.csv");
+
+                    using (var dalAndamentoNegocial = new DAL.Acionamentos(_config))
+                    {
+                        dalAndamentoNegocial.RegistrarHistoricoOcorrencia(
+                            new List<Ocorrencia>() {
+                                new Ocorrencia() { atualizado_em = DateTime.Now, cliente = "", contrato = "", criado_em = DateTime.Now.Date, id_ocorrencia = 0.ToString(), id_usuario = 371, origem_ocorrencia = "FNWS", retorno = "sucesso", success = true }
+                            });
+                    }
+                }
+                Ocorrencias = null;
+            }
+        }
+
         private static IEnumerable<AcionamentoIntegracaoOmni> GerarLista(IEnumerable<AcionamentoIntegracaoOmni> dadosOcorrencia, int registroPorEtapa)
         {
 
@@ -208,6 +285,115 @@ namespace EnvioOcorrenciasOmni.BLL.EnvioOcorrenciasWS
                 throw;
             }
         }
+
+        //public void RegistrarOcorrencia(int us_id)
+        //{
+        //    IEnumerable<AcionamentoIntegracaoOmni> dadosOcorrencia = null;
+        //    var nomeArquivo = "";
+        //    List<Ocorrencia> Ocorrencias = new List<Ocorrencia>();
+        //    string codigoClienteParceiroAtual = string.Empty;
+
+        //    try
+        //    {
+        //        _spinner.SetCursorSpinner(_logger, "Recuperando ocorrencias a serem enviadas");
+
+        //        //Recupera dados das ocorrências a serem importadas para a omni.
+        //        using (var dalAndamentoNegocial = new DAL.Acionamentos(_config))
+        //        {
+        //            dadosOcorrencia = dalAndamentoNegocial.OcorrenciasParaEnvioWs().ToList();
+        //        }
+
+        //        _spinner.SetCursorSpinner(_logger, "Gerando relatório contendo dados coletados para envio");
+
+        //        GeradorArquivo.ListaParaCsv(dadosOcorrencia, nomeArquivo = $"{saveFilePath}\\{DateTime.Now:yyyyMMddHHmmss}.csv");
+
+        //        _spinner.SetCursorSpinner(_logger, $"Relatório gerado com sucesso em : {nomeArquivo}");
+
+
+        //        if (dadosOcorrencia.Any())
+        //        {
+        //            _spinner.SetCursorSpinner(_logger, $"Iniciando envio de " + dadosOcorrencia.Count() + " registros");
+
+        //            IEnumerable<AcionamentoIntegracaoOmni> dados = null;
+
+        //            try
+        //            {
+        //                //TODO colocar no arquvo de configuracao a qunatidade de dados a serem enviados
+        //                while ((dados = GerarLista(dadosOcorrencia, _parametrosServicoOmni.quantidadeRegistroPorEtapa)).Count() > 0)
+        //                {
+        //                    foreach (var ocorr in dados)
+        //                    {
+        //                        try
+        //                        {
+        //                            if (_clienteServicoOmni.CodigoParceiro != _parametrosServicoOmni.CODIGO_PARCEIRO_OMNI)
+        //                            {
+        //                                codigoClienteParceiroAtual = _parametrosServicoOmni.CODIGO_PARCEIRO_OMNI;
+        //                                _clienteServicoOmni = _clienteServicoOmni.ObterServico();
+
+        //                            }
+
+        //                            var ret = _clienteServicoOmni.IncluirOcorrencia(
+        //                                                                  ocorr.contr_contrato
+        //                                                                , ocorr.at_reu_cod_externo
+        //                                                                , ocorr.us_login_externo
+        //                                                                , ocorr.cod_ocorr_omni
+        //                                                                , ocorr.andn_data_cadastro
+        //                                                                , ocorr.andn_andamento
+        //                                                                , ocorr.telefone
+        //                                                                , ocorr.cod_cliente_omni
+        //                                                            );
+
+        //                            Ocorrencia ocorrencia = GerarOcorrencia(us_id, ocorr, MontarMensagem(ocorr.andn_id, ret), (ret.erro?.Length ?? 0) == 0);
+        //                            Ocorrencias.Add(ocorrencia);
+        //                        }
+        //                        catch (Exception ex)
+        //                        {
+        //                            _logger.LogDebug(" Ocorreu um erro: " + string.Format("IdOcorrencia: {0} | Erro: {1}", ocorr.andn_id, ex.Message));
+        //                        }
+        //                    }
+
+        //                    _spinner.SetCursorSpinner(_logger, $"Registros enviados {dados.Count()}, de um total de {dadosOcorrencia.Count() + dados.Count()}, restam {dadosOcorrencia.Count()}");
+
+        //                }
+        //            }
+        //            finally
+        //            {
+
+        //                try
+        //                {
+        //                    _spinner.SetCursorSpinner(_logger, "Finalizando o processamento");
+        //                    if (Ocorrencias.Count > 0)
+        //                    {
+        //                        GeradorArquivo.ListaParaCsv(Ocorrencias, nomeArquivo.Replace(".csv", "resultado_processamento.csv"));
+
+        //                        //Recupera dados das ocorrências a serem importadas para a omni.
+        //                        using (var dalAndamentoNegocial = new DAL.Acionamentos(_config))
+        //                        {
+        //                            dalAndamentoNegocial.RegistrarHistoricoOcorrencia(Ocorrencias);
+        //                        }
+        //                    }
+
+        //                    _spinner.SetCursorSpinner(_logger, "Envio finalizado");
+        //                }
+        //                catch (Exception ex)
+        //                {
+        //                    _logger.LogDebug($"Ocorreu um erro ao finalizar : {ex.Message}");
+        //                    throw;
+        //                }
+        //            }
+        //        }
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        _logger.LogDebug($" Ocorreu um erro: {ex.Message}");
+        //        throw;
+        //    }
+        //    finally
+        //    {
+        //        dadosOcorrencia = null;
+        //        Ocorrencias = null;
+        //    }
+        //}
 
         private string MontarMensagem(string idOcorrencia, IncluiOcorrenciaResponse retornoOmni)
         {

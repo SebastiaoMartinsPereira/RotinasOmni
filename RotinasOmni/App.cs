@@ -38,6 +38,7 @@ namespace RotinasOmni
 
                 //Processa envio de ocorrencias via WebService Omni
                 if (_args[0] == typeof(EnvioOcorrenciasOmni.EnvioOcorrencias).Name) new EnvioOcorrenciasOmni.EnvioOcorrencias(this.Configuration, _logger, _spinner).ProcessarEnvio(_args.ToArray().Contains("-a"));
+                if (_args[0] == typeof(SimularOcorrenciasOmni.SimularOcorrencias).Name) new SimularOcorrenciasOmni.SimularOcorrencias(this.Configuration, _logger, _spinner).ProcessarEnvio();
 
 
             }
@@ -56,8 +57,12 @@ namespace RotinasOmni
         {
             _logger.LogInformation("Definir a aplicação a ser executada via linha de comando\n\n");
             _logger.LogInformation("-- ---- ----                 Opções disponíveis            ---- ---- --");
+
             _logger.LogInformation($"{typeof(EnvioOcorrenciasOmni.EnvioOcorrencias).Name} [-a]");
             _logger.LogInformation($"Descrição \n Nome da Aplicação : {typeof(EnvioOcorrenciasOmni.EnvioOcorrencias).Name} \n Parâmetros: \n [-a] Opcional, informa se a data deve ser definida automaticamente como a data do dia atual.");
+
+            _logger.LogInformation($"{typeof(SimularOcorrenciasOmni.SimularOcorrencias).Name} ");
+            _logger.LogInformation($"Descrição \n Nome da Aplicação : {typeof(SimularOcorrenciasOmni.SimularOcorrencias).Name}");
         }
     }
 }

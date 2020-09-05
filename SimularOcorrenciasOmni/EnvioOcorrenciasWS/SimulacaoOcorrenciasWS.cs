@@ -15,7 +15,7 @@ using WsCobrancaOmni;
 
 namespace EnvioOcorrenciasOmni.BLL.EnvioOcorrenciasWS
 {
-    public class EnvioOcorrenciasWS
+    public class SimulacaoOcorrenciasWS
     {
         //Codigos de erros Omni Conhecidos
         private readonly string[] codigosOmni = { "-20006", "-10001", "-10003", "-20023", "-20005" };
@@ -27,7 +27,7 @@ namespace EnvioOcorrenciasOmni.BLL.EnvioOcorrenciasWS
         private readonly dynamic _parametrosServicoOmni;
         private ServicoOmniFacil _clienteServicoOmni;
 
-        public EnvioOcorrenciasWS(IConfiguration config, ILogger logger, Spinner spinner)
+        public SimulacaoOcorrenciasWS(IConfiguration config, ILogger logger, Spinner spinner)
         {
             _config = config;
             _logger = logger;
